@@ -1,7 +1,7 @@
 let after s i = String.sub s i (String.length s - i)
 
 let parse_int_opt (expr : string) : (int * string) option =
-  Scanf.sscanf_opt expr "%u%[^\\n]" (fun x rest -> (x, rest))
+  Scanf.sscanf_opt expr "%u%[^\n]" (fun x rest -> (x, rest))
 
 let parse_int expr = Option.get (parse_int_opt expr)
 let is_blank c = match c with ' ' | '\r' | '\n' | '\t' -> true | _ -> false
