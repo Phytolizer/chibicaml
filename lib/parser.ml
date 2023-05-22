@@ -146,8 +146,15 @@ and expr_stmt self input rest tok =
   rest := Token.skip input !tok ";";
   node
 
-(* stmt: expr-stmt *)
-and stmt input rest tok = expr_stmt input rest tok
+(* stmt: 'return' expr ';' | expr-stmt *)
+and stmt self input rest tok =
+  if Token.equal (List.hd tok) "return" then (
+    let tok = ref tok in
+    let value = expr self input tok (List.tl !tok) in
+    let node = Node.make_unary Return value in
+    rest := Token.skip input !tok ";";
+    node)
+  else expr_stmt self input rest tok
 
 let parse input (tokens : Token.t list) : Node.func =
   let tokens = ref tokens in

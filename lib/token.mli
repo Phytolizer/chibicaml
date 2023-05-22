@@ -1,5 +1,5 @@
-type kind = Reserved | Ident of string | Num of int | Eof
-type t = { kind : kind; text : string; pos : int }
+type kind = Reserved | Ident of string | Num of int | Eof [@@deriving show]
+type t = { kind : kind; text : string; pos : int } [@@deriving show]
 
 val equal : t -> string -> bool
 val skip : string -> t list -> string -> t list

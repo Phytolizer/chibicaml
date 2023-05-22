@@ -9,6 +9,7 @@ type kind =
   | Le
   | Assign
   | ExprStmt
+  | Return
   | Var of var ref
   | Num of int
 

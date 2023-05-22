@@ -1,5 +1,5 @@
-type kind = Reserved | Ident of string | Num of int | Eof
-type t = { kind : kind; text : string; pos : int }
+type kind = Reserved | Ident of string | Num of int | Eof [@@deriving show]
+type t = { kind : kind; text : string; pos : int } [@@deriving show]
 
 let equal (tok : t) : string -> bool = String.equal tok.text
 let error (input : string) (tok : t) = Error.error_at input tok.pos

@@ -64,6 +64,9 @@ let rec gen_expr (self : t) (node : Node.t) =
 let gen_stmt self (node : Node.t) =
   match node.kind with
   | Node.ExprStmt -> gen_expr self (Option.get node.lhs)
+  | Node.Return ->
+      gen_expr self (Option.get node.lhs);
+      print_endline "  jmp .L.return"
   | _ -> Error.error "invalid statement"
 
 let gen (prog : Node.func) =
@@ -80,6 +83,7 @@ let gen (prog : Node.func) =
       gen_stmt self stmt;
       assert (self.depth == 0))
     !prog.body;
+  print_endline ".L.return:";
   print_endline "  mov rsp, rbp";
   print_endline "  pop rbp";
   print_endline "  ret"
