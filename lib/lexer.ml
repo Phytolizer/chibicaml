@@ -51,7 +51,6 @@ let tokenize text =
           done;
           let len = !p - q in
           let id = String.sub text q len in
-          Printf.eprintf "q: %d p: %d\n" q !p;
           cur := Token.make (Ident id) id q :: !cur
       | '+' | '-' | '*' | '/' | '(' | ')' | '>' | '<' | ';' | '=' ->
           cur := Token.make Reserved (String.sub text !p 1) !p :: !cur;
@@ -59,6 +58,4 @@ let tokenize text =
       | _ -> Error.error_at text !p "invalid token"
   done;
   cur := Token.make Eof "" !p :: !cur;
-  List.map Token.show (List.rev !cur) |> String.concat "\n" |> prerr_endline;
-  let result = List.rev !cur |> convert_keywords in
-  result
+  List.rev !cur |> convert_keywords
