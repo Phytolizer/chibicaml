@@ -1,0 +1,5 @@
+(executable
+ (public_name chibic)
+ (name chibic)
+ (libraries chibic)
+ (preprocess (pps ppx_deriving.show)))
