@@ -8,10 +8,21 @@ let pop (self : t) arg =
   Printf.printf "  pop %s\n" arg;
   self.depth <- self.depth - 1
 
+let align_to (n : int) (align : int) : int = (n + align - 1) / align * align
+
+let assign_lvar_offsets (prog : Node.func ref) =
+  let offset = ref 0 in
+  Hashtbl.iter
+    (fun _ (var : Node.var ref) ->
+      offset := !offset + 8;
+      var := { !var with offset = !offset })
+    !prog.locals;
+  prog := { !prog with stack_size = align_to !offset 16 }
+
 let gen_addr (node : Node.t) =
   match node.kind with
-  | Node.Var name ->
-      let offset = (Char.code name - Char.code 'a' + 1) * 8 in
+  | Node.Var var ->
+      let offset = !var.offset in
       Printf.printf "  lea rax, [rbp - %d]\n" offset
   | _ -> Error.error "not an lvalue"
 
@@ -55,17 +66,20 @@ let gen_stmt self (node : Node.t) =
   | Node.ExprStmt -> gen_expr self (Option.get node.lhs)
   | _ -> Error.error "invalid statement"
 
-let gen (node : Node.t) =
+let gen (prog : Node.func) =
+  let prog = ref prog in
+  assign_lvar_offsets prog;
   let self = { depth = 0 } in
   print_endline "  global main";
   print_endline "main:";
   print_endline "  push rbp";
   print_endline "  mov rbp, rsp";
-  print_endline "  sub rsp, 208";
-  (match node.kind with
-  | Node.Prog contents -> List.iter (gen_stmt self) contents
-  | _ -> Error.error "not a program");
-  assert (self.depth == 0);
+  Printf.printf "  sub rsp, %d\n" !prog.stack_size;
+  List.iter
+    (fun stmt ->
+      gen_stmt self stmt;
+      assert (self.depth == 0))
+    !prog.body;
   print_endline "  mov rsp, rbp";
   print_endline "  pop rbp";
   print_endline "  ret"

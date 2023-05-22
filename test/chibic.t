@@ -58,3 +58,9 @@ Simple locals
   [8]
   $ ./scripts/runcode.sh "a=b=3; a+b;"
   [6]
+
+Longer local names
+  $ ./scripts/runcode.sh "foo=3; foo;"
+  [3]
+  $ ./scripts/runcode.sh "foo123=3; bar=5; foo123+bar;"
+  [8]

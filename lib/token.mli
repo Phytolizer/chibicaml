@@ -1,4 +1,4 @@
-type kind = Reserved | Ident of char | Num of int | Eof
+type kind = Reserved | Ident of string | Num of int | Eof
 type t = { kind : kind; text : string; pos : int }
 
 val equal : t -> string -> bool

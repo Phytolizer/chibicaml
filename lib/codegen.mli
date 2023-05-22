@@ -1,1 +1,1 @@
-val gen : Node.t -> unit
+val gen : Node.func -> unit

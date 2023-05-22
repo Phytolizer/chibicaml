@@ -1,1 +1,1 @@
-val parse : string -> Token.t list -> Node.t
+val parse : string -> Token.t list -> Node.func
