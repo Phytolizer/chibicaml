@@ -20,6 +20,15 @@ let pop out (self : t) arg =
   emitf out "pop %s" arg;
   self.depth <- self.depth - 1
 
+let load out (ty : Type.t) =
+  match ty.kind with
+  | Array _ -> () (* do not load entire arrays into registers *)
+  | _ -> emit out "mov rax, [rax]"
+
+let store out self =
+  pop out self "rdi";
+  emit out "mov [rdi], rax"
+
 let count (self : t) =
   let result = self.counter in
   self.counter <- self.counter + 1;
@@ -31,7 +40,7 @@ let assign_lvar_offsets (f : Node.func) =
   let offset = ref 0 in
   Hashtbl.iter
     (fun _ (var : Node.var ref) ->
-      offset := !offset + 8;
+      offset := !offset + !var.var_ty.sizeof;
       var := { !var with offset = !offset })
     f.func_locals;
   { f with func_stack_size = align_to !offset 16 }
@@ -49,17 +58,16 @@ and gen_expr out (self : t) (input : string) (node : Node.t) =
   | Num value -> emitf out "mov rax, %d" value
   | Var _ ->
       gen_addr out self input node;
-      emit out "mov rax, [rax]"
+      load out (Option.get node.ty)
   | Deref ->
       gen_expr out self input (Option.get node.lhs);
-      emit out "mov rax, [rax]"
+      load out (Option.get node.ty)
   | Addr -> gen_addr out self input (Option.get node.lhs)
   | Assign ->
       gen_addr out self input (Option.get node.lhs);
       push out self;
       gen_expr out self input (Option.get node.rhs);
-      pop out self "rdi";
-      emit out "mov [rdi], rax"
+      store out self
   | FunCall node ->
       let nargs =
         List.length

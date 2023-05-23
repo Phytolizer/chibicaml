@@ -1,3 +1,5 @@
+open Extensions
+
 type locals = (string, Node.var ref) Hashtbl.t
 
 let find_var (locals : locals) (tok : Token.t) : Node.var ref option =
@@ -8,14 +10,16 @@ let get_ident input (tok : Token.t) : string =
   | Ident name -> name
   | _ -> Token.error input tok "expected an identifier"
 
+let get_number input (tok : Token.t) : int =
+  match tok.kind with
+  | Num n -> n
+  | _ -> Token.error input tok "expected a number"
+
 let new_lvar (locals : locals) (var_ty : Type.t) (name : string) : Node.var ref
     =
   let var = ref ({ name; var_ty; offset = 0 } : Node.var) in
   Hashtbl.add locals name var;
   var
-
-let lazy_value (default : unit -> 'a) (x : 'a option) : 'a =
-  match x with Some x -> x | None -> default ()
 
 let create_param_lvar input (locals : locals) (param : Type.t) =
   new_lvar locals param (get_ident input (Option.get param.name))
@@ -56,8 +60,9 @@ and primary (locals : locals) input rest (tok : Token.t list) =
             (* Variable *)
             let var =
               find_var locals (List.hd !tok)
-              |> lazy_value (fun () ->
-                     Token.error input (List.hd !tok) "undefined variable")
+              |> Option.lazy_value
+                   (lazy
+                     (Token.error input (List.hd !tok) "undefined variable"))
             in
             let node = Node.make_var start_tok var in
             rest := List.tl !tok;
@@ -77,7 +82,7 @@ and unary locals input rest (tok : Token.t list) =
   | "&" ->
       Node.make_unary start_tok Addr (unary locals input rest (List.tl tok))
   | "*" ->
-      Node.make_unary start_tok Deref (unary locals input rest (List.tl tok))
+      unary locals input rest (List.tl tok) |> Node.make_unary start_tok Deref
   | _ -> primary locals input rest tok
 
 (* mul: unary { '*' unary | '/' unary } *)
@@ -264,7 +269,7 @@ and compound_stmt locals input rest (tok : Token.t list) =
       | "int" -> declaration locals input tok !tok
       | _ -> stmt locals input tok !tok
     in
-    cur := (node |> Node.add_type) :: !cur
+    cur := (node |> Node.add_type input) :: !cur
   done;
   rest := List.tl !tok;
   List.rev !cur |> fun x -> Node.Block x |> Node.make start_tok
@@ -294,25 +299,35 @@ and declaration locals input rest tok =
 (* typespec: 'int' *)
 and typespec input rest tok : Type.t =
   rest := Token.skip input tok "int";
-  Type.make Int
+  Type.int
 
-(* type-suffix: [ '(' [ func-params ] ')' ] *)
+(* type-suffix: '(' func-params
+              | '[' num ']'
+              | epsilon *)
 and type_suffix input rest (tok : Token.t list) (ty : Type.t) =
   match (List.hd tok).text with
-  | "(" ->
-      let tok = ref (List.tl tok) in
-      let cur = ref ([] : Type.t list) in
-      let first = ref true in
-      while not (Token.equal (List.hd !tok) ")") do
-        if !first then first := false else tok := Token.skip input !tok ",";
-        let ty = typespec input tok !tok |> declarator input tok !tok in
-        cur := ty :: !cur
-      done;
-      rest := List.tl !tok;
-      { ty with kind = Type.Func { func_ty = ty; func_params = List.rev !cur } }
+  | "(" -> func_params input rest tok ty
+  | "[" ->
+      let sz = List.tl tok |> List.hd |> get_number input in
+      rest := Token.skip input (List.tl (List.tl tok)) "]";
+      Type.array_of ty sz
   | _ ->
       rest := tok;
       ty
+
+(* func-params: [ param { ',' param } ] ')' *)
+(* param: typespec declarator *)
+and func_params input rest tok ty =
+  let tok = ref (List.tl tok) in
+  let cur = ref ([] : Type.t list) in
+  let first = ref true in
+  while not (Token.equal (List.hd !tok) ")") do
+    if !first then first := false else tok := Token.skip input !tok ",";
+    let ty = typespec input tok !tok |> declarator input tok !tok in
+    cur := ty :: !cur
+  done;
+  rest := List.tl !tok;
+  { ty with kind = Type.Func { func_ty = ty; func_params = List.rev !cur } }
 
 (* declarator: { '*' } ident type-suffix *)
 and declarator input rest (tok : Token.t list) (ty : Type.t) =

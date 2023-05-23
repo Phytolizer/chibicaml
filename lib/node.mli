@@ -19,8 +19,9 @@ type kind =
   | Var of var ref
   | Num of int
   | Block of t list
+[@@deriving show]
 
-and var = { name : string; var_ty : Type.t; offset : int }
+and var = { name : string; var_ty : Type.t; offset : int } [@@deriving show]
 
 and func = {
   func_name : string;
@@ -29,8 +30,9 @@ and func = {
   func_locals : (string, var ref) Hashtbl.t;
   func_stack_size : int;
 }
+[@@deriving show]
 
-and funcall = { funcall_name : string; funcall_args : t list }
+and funcall = { funcall_name : string; funcall_args : t list } [@@deriving show]
 
 and for_stmt = {
   for_init : t option;
@@ -38,8 +40,10 @@ and for_stmt = {
   for_inc : t option;
   for_body : t;
 }
+[@@deriving show]
 
 and if_stmt = { if_cond : t; if_then_stmt : t; if_else_stmt : t option }
+[@@deriving show]
 
 and t = {
   kind : kind;
@@ -48,6 +52,7 @@ and t = {
   lhs : t option;
   rhs : t option;
 }
+[@@deriving show]
 
 and prog = func list
 
@@ -58,4 +63,4 @@ val make_num : Token.t -> int -> t
 val make_var : Token.t -> var ref -> t
 val make_add : string -> Token.t -> t -> t -> t
 val make_sub : string -> Token.t -> t -> t -> t
-val add_type : t -> t
+val add_type : string -> t -> t
