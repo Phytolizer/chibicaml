@@ -24,6 +24,7 @@ and var = { name : string; var_ty : Type.t; offset : int }
 
 and func = {
   func_name : string;
+  func_params : var ref list;
   func_body : t;
   func_locals : (string, var ref) Hashtbl.t;
   func_stack_size : int;

@@ -17,6 +17,9 @@ let new_lvar (locals : locals) (var_ty : Type.t) (name : string) : Node.var ref
 let lazy_value (default : unit -> 'a) (x : 'a option) : 'a =
   match x with Some x -> x | None -> default ()
 
+let create_param_lvar input (locals : locals) (param : Type.t) =
+  new_lvar locals param (get_ident input (Option.get param.name))
+
 (* funcall: ident '(' [ assign { ',' assign } ] ')' *)
 let rec funcall (locals : locals) input rest (tok : Token.t list) =
   let start_tok = List.hd tok in
@@ -293,12 +296,20 @@ and typespec input rest tok : Type.t =
   rest := Token.skip input tok "int";
   Type.make Int
 
-(* type-suffix: [ '(' func-params ] *)
-and type_suffix input rest (tok : Token.t list) ty =
+(* type-suffix: [ '(' [ func-params ] ')' ] *)
+and type_suffix input rest (tok : Token.t list) (ty : Type.t) =
   match (List.hd tok).text with
   | "(" ->
-      rest := Token.skip input (List.tl tok) ")";
-      Type.func ty
+      let tok = ref (List.tl tok) in
+      let cur = ref ([] : Type.t list) in
+      let first = ref true in
+      while not (Token.equal (List.hd !tok) ")") do
+        if !first then first := false else tok := Token.skip input !tok ",";
+        let ty = typespec input tok !tok |> declarator input tok !tok in
+        cur := ty :: !cur
+      done;
+      rest := List.tl !tok;
+      { ty with kind = Type.Func { func_ty = ty; func_params = List.rev !cur } }
   | _ ->
       rest := tok;
       ty
@@ -321,9 +332,14 @@ and func input rest tok : Node.func =
   let ty = typespec input tok !tok |> declarator input tok !tok in
   let func_locals = Hashtbl.create 0 in
   let func_name = ty.name |> Option.get |> get_ident input in
+  let func_params =
+    List.map
+      (create_param_lvar input func_locals)
+      (Type.get_func ty).func_params
+  in
   tok := Token.skip input !tok "{";
   let func_body = compound_stmt func_locals input rest !tok in
-  { func_name; func_locals; func_body; func_stack_size = 0 }
+  { func_name; func_params; func_locals; func_body; func_stack_size = 0 }
 
 let parse input (tokens : Token.t list) : Node.prog =
   let tokens = ref tokens in

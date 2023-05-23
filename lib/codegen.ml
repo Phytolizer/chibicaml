@@ -138,6 +138,11 @@ let gen_fn out (input : string) (f : Node.func) =
   emit out "push rbp";
   emit out "mov rbp, rsp";
   emitf out "sub rsp, %d" f.func_stack_size;
+  (* args were passed by reg; move to stack *)
+  Seq.iter
+    (fun (argreg, (var : Node.var ref)) ->
+      emitf out "mov [rbp - %d], %s" !var.offset argreg)
+    (Seq.zip argreg (List.to_seq f.func_params));
   gen_stmt out self input f.func_body;
   BatPrintf.fprintf out ".L.return.%s:\n" f.func_name;
   emit out "mov rsp, rbp";
