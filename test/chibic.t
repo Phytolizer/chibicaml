@@ -106,11 +106,13 @@ Address/deref expressions
   [3]
   $ ./scripts/runcode.sh "{ x=3; y=&x; z=&y; return **z; }"
   [3]
-  $ ./scripts/runcode.sh "{ x=3; y=5; return *(&x+8); }"
+  $ ./scripts/runcode.sh "{ x=3; y=5; return *(&x+1); }"
   [5]
-  $ ./scripts/runcode.sh "{ x=3; y=5; return *(&y-8); }"
+  $ ./scripts/runcode.sh "{ x=3; y=5; return *(&y-1); }"
   [3]
-  $ ./scripts/runcode.sh "{ x=3; y=5; *(&x+8)=7; return y; }"
+  $ ./scripts/runcode.sh "{ x=3; y=5; *(&x+1)=7; return y; }"
   [7]
-  $ ./scripts/runcode.sh "{ x=3; y=5; *(&y-8)=7; return x; }"
+  $ ./scripts/runcode.sh "{ x=3; y=5; *(&y-2+1)=7; return x; }"
   [7]
+  $ ./scripts/runcode.sh "{ x=3; return (&x+2)-&x+3; }"
+  [5]

@@ -80,10 +80,10 @@ and add self input rest tok =
     match (List.hd !tok).text with
     | "+" ->
         let rhs = mul self input tok (List.tl !tok) in
-        node := Node.make_binary start_tok Add !node rhs
+        node := Node.make_add input start_tok !node rhs
     | "-" ->
         let rhs = mul self input tok (List.tl !tok) in
-        node := Node.make_binary start_tok Sub !node rhs
+        node := Node.make_sub input start_tok !node rhs
     | _ ->
         rest := !tok;
         looping := false
@@ -167,7 +167,7 @@ and compound_stmt self input rest (tok : Token.t list) =
   let tok = ref tok in
   let cur = ref ([] : Node.t list) in
   while not (String.equal (List.hd !tok).text "}") do
-    cur := stmt self input tok !tok :: !cur
+    cur := (stmt self input tok !tok |> Node.add_type) :: !cur
   done;
   rest := List.tl !tok;
   List.rev !cur |> fun x -> Node.Block x |> Node.make start_tok
