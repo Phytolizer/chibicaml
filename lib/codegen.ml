@@ -54,6 +54,10 @@ and gen_expr (self : t) (input : string) (node : Node.t) =
       gen_expr self input (Option.get node.rhs);
       pop self "rdi";
       emit "mov [rdi], rax"
+  | FunCall name ->
+      emit "mov rax, 0";
+      emitf "extern %s" name;
+      emitf "call %s" name
   | kind -> (
       gen_expr self input (Option.get node.rhs);
       push self;

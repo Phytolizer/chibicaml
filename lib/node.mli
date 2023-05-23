@@ -10,6 +10,7 @@ type kind =
   | Assign
   | Addr
   | Deref
+  | FunCall of string
   | ExprStmt
   (* while loops go here too *)
   | For of for_stmt

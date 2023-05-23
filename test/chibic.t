@@ -1,3 +1,9 @@
+Write aux file for upcoming tests
+  $ cat <<EOM | gcc -xc -c -o tmp2.o -
+  > int ret3() { return 3; }
+  > int ret5() { return 5; }
+  > EOM
+
   $ ./scripts/runcode.sh "{ return 0; }"
   $ ./scripts/runcode.sh "{ return 42; }"
   [42]
@@ -126,3 +132,9 @@ Address/deref expressions
   [8]
   $ ./scripts/runcode.sh "{ int x=3, y=5; return x+y; }"
   [8]
+
+Function calls
+  $ ./scripts/runcode.sh "{ return ret3(); }"
+  [3]
+  $ ./scripts/runcode.sh "{ return ret5(); }"
+  [5]

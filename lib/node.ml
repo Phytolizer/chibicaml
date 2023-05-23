@@ -10,6 +10,7 @@ type kind =
   | Assign
   | Addr
   | Deref
+  | FunCall of string
   | ExprStmt
   (* while loops go here too *)
   | For of for_stmt
@@ -71,7 +72,8 @@ let rec add_type (node : t) : t =
             | Add | Sub | Mul | Div | Assign ->
                 let left_ty = Option.get (Option.get !node.lhs).ty in
                 Some left_ty
-            | Eq | Ne | Lt | Le | Var _ | Num _ -> Some (Type.make Int)
+            | Eq | Ne | Lt | Le | Var _ | Num _ | FunCall _ ->
+                Some (Type.make Int)
             | Addr ->
                 let left_ty = Option.get (Option.get !node.lhs).ty in
                 Some (Type.ptr_to left_ty)

@@ -16,7 +16,8 @@ let new_lvar (self : t) (var_ty : Type.t) (name : string) : Node.var ref =
 let lazy_value (default : unit -> 'a) (x : 'a option) : 'a =
   match x with Some x -> x | None -> default ()
 
-(* primary: '(' expr ')' | num | ident *)
+(* primary: '(' expr ')' | num | ident [ args ] *)
+(* args: '(' ')' *)
 let rec primary (self : t) input rest (tok : Token.t list) =
   let start_tok = List.hd tok in
   let tok = ref tok in
@@ -32,14 +33,22 @@ let rec primary (self : t) input rest (tok : Token.t list) =
           rest := List.tl !tok;
           node
       | Token.Ident _ ->
-          let var =
-            find_var self (List.hd !tok)
-            |> lazy_value (fun () ->
-                   Token.error input (List.hd !tok) "undefined variable")
-          in
-          let node = Node.make_var start_tok var in
-          rest := List.tl !tok;
-          node
+          if Token.equal (List.nth !tok 1) "(" then (
+            (* Function call *)
+            let name_tok = List.hd !tok in
+            let node = Node.make name_tok (FunCall name_tok.text) in
+            rest := Token.skip input (List.tl (List.tl !tok)) ")";
+            node)
+          else
+            (* Variable *)
+            let var =
+              find_var self (List.hd !tok)
+              |> lazy_value (fun () ->
+                     Token.error input (List.hd !tok) "undefined variable")
+            in
+            let node = Node.make_var start_tok var in
+            rest := List.tl !tok;
+            node
       | _ -> Token.error input (List.hd !tok) "expected an expression")
 
 (* unary: ( '+' | '-' | '*' | '&' ) unary
