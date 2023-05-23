@@ -1,4 +1,5 @@
-(cram
- (deps
-  %{bin:chibic}
-  ./scripts/runcode.sh))
+(library
+ (name test)
+ (libraries chibic unix batteries)
+ (preprocess (pps ppx_jane))
+ (inline_tests (deps ../bin/chibic.exe) (flags (-verbose))))

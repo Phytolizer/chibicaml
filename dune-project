@@ -11,7 +11,7 @@
 
 (maintainers "Kyle Coffey")
 
-(license LICENSE)
+(license "MIT")
 
 (documentation https://url/to/documentation)
 
@@ -19,7 +19,7 @@
  (name chibic)
  (synopsis "A short synopsis")
  (description "A longer description")
- (depends ocaml dune angstrom ppx_deriving)
+ (depends ocaml dune angstrom ppx_deriving ppx_jane batteries)
  (tags
   (topics "to describe" your project)))
 

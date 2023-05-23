@@ -1,3 +1,4 @@
 (library
  (name chibic)
+ (libraries batteries)
  (preprocess (pps ppx_deriving.show)))

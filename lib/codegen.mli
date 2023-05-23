@@ -1,1 +1,3 @@
-val gen : string -> Node.prog -> unit
+open BatIO
+
+val gen : 'a output -> string -> Node.prog -> unit
