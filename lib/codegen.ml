@@ -85,7 +85,7 @@ let rec gen_stmt self (node : Node.t) =
       Printf.printf ".L.end.%d:\n" c
   | Node.For node ->
       let c = count self in
-      gen_stmt self node.for_init;
+      Option.map (gen_stmt self) node.for_init |> ignore;
       Printf.printf ".L.begin.%d:\n" c;
       Option.map
         (fun cond ->

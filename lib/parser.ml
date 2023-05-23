@@ -189,7 +189,7 @@ and stmt self input rest (tok : Token.t list) =
   | "for" ->
       let tok = ref tok in
       tok := Token.skip input (List.tl !tok) "(";
-      let for_init = expr_stmt self input tok !tok in
+      let for_init = Some (expr_stmt self input tok !tok) in
       let for_cond =
         if not (Token.equal (List.hd !tok) ";") then
           Some (expr self input tok !tok)
@@ -211,12 +211,7 @@ and stmt self input rest (tok : Token.t list) =
       tok := Token.skip input !tok ")";
       let for_body = stmt self input rest !tok in
       Node.For
-        {
-          for_init = Node.Block [] |> Node.make;
-          for_cond = Some for_cond;
-          for_inc = None;
-          for_body;
-        }
+        { for_init = None; for_cond = Some for_cond; for_inc = None; for_body }
       |> Node.make
   | "{" -> compound_stmt self input rest (List.tl tok)
   | _ -> expr_stmt self input rest tok

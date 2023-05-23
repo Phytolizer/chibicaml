@@ -26,7 +26,7 @@ and func = {
 }
 
 and for_stmt = {
-  for_init : t;
+  for_init : t option;
   for_cond : t option;
   for_inc : t option;
   for_body : t;
