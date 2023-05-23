@@ -16,16 +16,19 @@ let rec orp (preds : ('a -> bool) list) value =
 let starts_with_any ps =
   List.map (fun p -> String.starts_with ~prefix:p) ps |> orp
 
+let eq_any ss = List.map String.equal ss |> orp
+
 let is_ident1 c =
   match c with 'a' .. 'z' | 'A' .. 'Z' | '_' -> true | _ -> false
 
 let is_ident2 c =
   match c with 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' -> true | _ -> false
 
+let is_keyword (tok : Token.t) = eq_any [ "return"; "if"; "else" ] tok.text
+
 let convert_keywords (toks : Token.t list) : Token.t list =
   List.map
-    (fun tok ->
-      if Token.equal tok "return" then { tok with kind = Reserved } else tok)
+    (fun tok -> if is_keyword tok then { tok with kind = Reserved } else tok)
     toks
 
 let tokenize text =

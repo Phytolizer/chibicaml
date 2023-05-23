@@ -9,6 +9,7 @@ type kind =
   | Le
   | Assign
   | ExprStmt
+  | If of if_stmt
   | Return
   | Var of var ref
   | Num of int
@@ -16,6 +17,7 @@ type kind =
 
 and var = { name : string; offset : int }
 and func = { body : t; locals : (string, var ref) Hashtbl.t; stack_size : int }
+and if_stmt = { cond : t; then_stmt : t; else_stmt : t option }
 and t = { kind : kind; lhs : t option; rhs : t option }
 
 let make kind = { kind; lhs = None; rhs = None }

@@ -161,6 +161,7 @@ and compound_stmt self input rest (tok : Token.t list) =
   List.rev !cur |> fun x -> Node.Block x |> Node.make
 
 (* stmt: 'return' expr ';'
+       | 'if' '(' expr ')' stmt [ 'else' stmt ]
        | '{' compound-stmt
        | expr-stmt *)
 and stmt self input rest (tok : Token.t list) =
@@ -171,6 +172,19 @@ and stmt self input rest (tok : Token.t list) =
       let node = Node.make_unary Return value in
       rest := Token.skip input !tok ";";
       node
+  | "if" ->
+      let tok = ref tok in
+      tok := Token.skip input (List.tl !tok) "(";
+      let cond = expr self input tok !tok in
+      tok := Token.skip input !tok ")";
+      let then_stmt = stmt self input tok !tok in
+      let else_stmt =
+        if Token.equal (List.hd !tok) "else" then
+          Some (stmt self input tok (List.tl !tok))
+        else None
+      in
+      rest := !tok;
+      Node.If { cond; then_stmt; else_stmt } |> Node.make
   | "{" -> compound_stmt self input rest (List.tl tok)
   | _ -> expr_stmt self input rest tok
 

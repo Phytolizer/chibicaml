@@ -76,3 +76,17 @@ Nested blocks
 Null statement
   $ ./scripts/runcode.sh "{ ;;; return 5; }"
   [5]
+
+If/else
+  $ ./scripts/runcode.sh "{ if (0) return 2; return 3; }"
+  [3]
+  $ ./scripts/runcode.sh "{ if (1-1) return 2; return 3; }"
+  [3]
+  $ ./scripts/runcode.sh "{ if (1) return 2; return 3; }"
+  [2]
+  $ ./scripts/runcode.sh "{ if (2-1) return 2; return 3; }"
+  [2]
+  $ ./scripts/runcode.sh "{ if (0) { 1; 2; return 3; } else { return 4; } }"
+  [4]
+  $ ./scripts/runcode.sh "{ if (1) { 1; 2; return 3; } else { return 4; } }"
+  [3]

@@ -1,4 +1,4 @@
-type t = { mutable depth : int }
+type t = { mutable depth : int; mutable counter : int }
 
 let push (self : t) =
   print_endline "  push rax";
@@ -7,6 +7,11 @@ let push (self : t) =
 let pop (self : t) arg =
   Printf.printf "  pop %s\n" arg;
   self.depth <- self.depth - 1
+
+let count (self : t) =
+  let result = self.counter in
+  self.counter <- self.counter + 1;
+  result
 
 let align_to (n : int) (align : int) : int = (n + align - 1) / align * align
 
@@ -68,12 +73,22 @@ let rec gen_stmt self (node : Node.t) =
       gen_expr self (Option.get node.lhs);
       print_endline "  jmp .L.return"
   | Node.Block body -> List.iter (gen_stmt self) body
+  | Node.If node ->
+      let c = count self in
+      gen_expr self node.cond;
+      print_endline "  cmp rax, 0";
+      Printf.printf "  je .L.else.%d\n" c;
+      gen_stmt self node.then_stmt;
+      Printf.printf "  jmp .L.end.%d\n" c;
+      Printf.printf ".L.else.%d:\n" c;
+      let _ = Option.map (gen_stmt self) node.else_stmt in
+      Printf.printf ".L.end.%d:\n" c
   | _ -> Error.error "invalid statement"
 
 let gen (prog : Node.func) =
   let prog = ref prog in
   assign_lvar_offsets prog;
-  let self = { depth = 0 } in
+  let self = { depth = 0; counter = 1 } in
   print_endline "  global main";
   print_endline "main:";
   print_endline "  push rbp";
