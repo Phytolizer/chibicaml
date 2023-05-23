@@ -38,7 +38,7 @@ let rec funcall (locals : locals) input rest (tok : Token.t list) =
   Node.make start_tok
     (FunCall { funcall_name = start_tok.text; funcall_args = List.rev !cur })
 
-(* primary: '(' expr ')' | num | ident [ func-args ] *)
+(* primary: '(' expr ')' | 'sizeof' unary | num | ident [ func-args ] *)
 and primary (locals : locals) input rest (tok : Token.t list) =
   let start_tok = List.hd tok in
   let tok = ref tok in
@@ -47,6 +47,11 @@ and primary (locals : locals) input rest (tok : Token.t list) =
       let node = expr locals input tok (List.tl !tok) in
       rest := Token.skip input !tok ")";
       node
+  | "sizeof" ->
+      let node =
+        unary locals input rest (List.tl !tok) |> Node.add_type input
+      in
+      Node.make_num (List.hd !tok) (Option.get node.ty).sizeof
   | _ -> (
       match (List.hd !tok).kind with
       | Token.Num value ->
