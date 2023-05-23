@@ -25,7 +25,7 @@ let is_ident2 c =
   match c with 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' -> true | _ -> false
 
 let is_keyword (tok : Token.t) =
-  eq_any [ "return"; "if"; "else"; "for"; "while" ] tok.text
+  eq_any [ "return"; "if"; "else"; "for"; "while"; "int" ] tok.text
 
 let convert_keywords (toks : Token.t list) : Token.t list =
   List.map
@@ -57,7 +57,7 @@ let tokenize text =
           let id = String.sub text q len in
           cur := Token.make (Ident id) id q :: !cur
       | '+' | '-' | '*' | '/' | '(' | ')' | '{' | '}' | '>' | '<' | ';' | '='
-      | '&' ->
+      | '&' | ',' ->
           cur := Token.make Reserved (String.sub text !p 1) !p :: !cur;
           p := !p + 1
       | _ -> Error.error_at text !p "invalid token"

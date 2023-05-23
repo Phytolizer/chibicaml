@@ -3,8 +3,13 @@ type t = { locals : (string, Node.var ref) Hashtbl.t }
 let find_var (self : t) (tok : Token.t) : Node.var ref option =
   Hashtbl.find_opt self.locals tok.text
 
-let new_lvar (self : t) (name : string) : Node.var ref =
-  let var = ref ({ name; offset = 0 } : Node.var) in
+let get_ident input (tok : Token.t) : string =
+  match tok.kind with
+  | Ident name -> name
+  | _ -> Token.error input tok "expected an identifier"
+
+let new_lvar (self : t) (var_ty : Type.t) (name : string) : Node.var ref =
+  let var = ref ({ name; var_ty; offset = 0 } : Node.var) in
   Hashtbl.add self.locals name var;
   var
 
@@ -26,10 +31,11 @@ let rec primary (self : t) input rest (tok : Token.t list) =
           let node = Node.make_num start_tok value in
           rest := List.tl !tok;
           node
-      | Token.Ident name ->
+      | Token.Ident _ ->
           let var =
             find_var self (List.hd !tok)
-            |> lazy_value (fun () -> new_lvar self name)
+            |> lazy_value (fun () ->
+                   Token.error input (List.hd !tok) "undefined variable")
           in
           let node = Node.make_var start_tok var in
           rest := List.tl !tok;
@@ -161,17 +167,6 @@ and expr_stmt self input rest tok =
     rest := Token.skip input !tok ";";
     node
 
-(* compound-stmt: { stmt } '}' *)
-and compound_stmt self input rest (tok : Token.t list) =
-  let start_tok = List.hd tok in
-  let tok = ref tok in
-  let cur = ref ([] : Node.t list) in
-  while not (String.equal (List.hd !tok).text "}") do
-    cur := (stmt self input tok !tok |> Node.add_type) :: !cur
-  done;
-  rest := List.tl !tok;
-  List.rev !cur |> fun x -> Node.Block x |> Node.make start_tok
-
 (* stmt: 'return' expr ';'
        | 'if' '(' expr ')' stmt [ 'else' stmt ]
        | 'for' '(' expr-stmt [ expr ] ';' [ expr ] ')' stmt
@@ -231,6 +226,64 @@ and stmt self input rest (tok : Token.t list) =
       |> Node.make start_tok
   | "{" -> compound_stmt self input rest (List.tl tok)
   | _ -> expr_stmt self input rest tok
+
+(* compound-stmt: { declaration | stmt } '}' *)
+and compound_stmt self input rest (tok : Token.t list) =
+  let start_tok = List.hd tok in
+  let tok = ref tok in
+  let cur = ref ([] : Node.t list) in
+  while not (String.equal (List.hd !tok).text "}") do
+    let node =
+      match (List.hd !tok).text with
+      | "int" -> declaration self input tok !tok
+      | _ -> stmt self input tok !tok
+    in
+    cur := (node |> Node.add_type) :: !cur
+  done;
+  rest := List.tl !tok;
+  List.rev !cur |> fun x -> Node.Block x |> Node.make start_tok
+
+(* declaration: typespec [ declarator [ '=' expr ] { ',' declarator [ '=' expr ] } ] ';' *)
+and declaration self input rest tok =
+  let tok = ref tok in
+  let basety = typespec input tok !tok in
+  let cur = ref ([] : Node.t list) in
+  let first = ref true in
+  while not (Token.equal (List.hd !tok) ";") do
+    if !first then first := false else tok := Token.skip input !tok ",";
+    let ty = declarator input tok !tok basety in
+    let var = get_ident input (Option.get ty.name) |> new_lvar self ty in
+    if Token.equal (List.hd !tok) "=" then
+      let lhs = Node.make_var (List.hd !tok) var in
+      let rhs = assign self input tok (List.tl !tok) in
+      let node = Node.make_binary (List.hd !tok) Assign lhs rhs in
+      cur := Node.make_unary (List.hd !tok) ExprStmt node :: !cur
+  done;
+  let node =
+    Node.make (List.hd !tok) (List.rev !cur |> fun x -> Node.Block x)
+  in
+  rest := List.tl !tok;
+  node
+
+(* typespec: 'int' *)
+and typespec input rest tok : Type.t =
+  rest := Token.skip input tok "int";
+  Type.make Int
+
+(* declarator: { '*' } ident *)
+and declarator input rest (tok : Token.t list) (ty : Type.t) =
+  let tok = ref tok in
+  let ty = ref ty in
+  while Token.consume tok !tok "*" do
+    ty := Type.ptr_to !ty
+  done;
+  let last_tok = List.hd !tok in
+  match last_tok.kind with
+  | Ident _ ->
+      ty := { !ty with name = Some last_tok };
+      rest := List.tl !tok;
+      !ty
+  | _ -> Token.error input last_tok "expected a variable name"
 
 let parse input (tokens : Token.t list) : Node.func =
   let start_tok = List.hd tokens in

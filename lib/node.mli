@@ -19,7 +19,7 @@ type kind =
   | Num of int
   | Block of t list
 
-and var = { name : string; offset : int }
+and var = { name : string; var_ty : Type.t; offset : int }
 
 and func = {
   func_body : t;

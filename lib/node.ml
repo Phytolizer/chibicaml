@@ -19,7 +19,7 @@ type kind =
   | Num of int
   | Block of t list
 
-and var = { name : string; offset : int }
+and var = { name : string; var_ty : Type.t; offset : int }
 
 and func = {
   func_body : t;
@@ -71,14 +71,16 @@ let rec add_type (node : t) : t =
             | Add | Sub | Mul | Div | Assign ->
                 let left_ty = Option.get (Option.get !node.lhs).ty in
                 Some left_ty
-            | Eq | Ne | Lt | Le | Var _ | Num _ -> Some Type.Int
+            | Eq | Ne | Lt | Le | Var _ | Num _ -> Some (Type.make Int)
             | Addr ->
                 let left_ty = Option.get (Option.get !node.lhs).ty in
-                Some (Type.Ptr left_ty)
+                Some (Type.ptr_to left_ty)
             | Deref ->
                 let left_ty = Option.get (Option.get !node.lhs).ty in
                 Some
-                  (match left_ty with Type.Ptr base -> base | _ -> Type.Int)
+                  (match left_ty.kind with
+                  | Type.Ptr base -> base
+                  | _ -> Type.make Int)
             | _ -> None);
         };
       !node
@@ -122,7 +124,7 @@ let make_sub input tok lhs rhs =
   let rhs = add_type rhs in
   let lhs_ty = Option.get lhs.ty in
   let rhs_ty = Option.get rhs.ty in
-  match (lhs_ty, rhs_ty) with
+  match (lhs_ty.kind, rhs_ty.kind) with
   (* num - num *)
   | Int, Int -> make_binary tok Sub lhs rhs
   (* ptr - num *)
@@ -133,6 +135,6 @@ let make_sub input tok lhs rhs =
   (* ptr - ptr *)
   | Ptr _, Ptr _ ->
       let node = make_binary tok Sub lhs rhs in
-      let node = { node with ty = Some Type.Int } in
+      let node = { node with ty = Some (Type.make Int) } in
       make_binary tok Div node (make_num tok 8)
   | _ -> Token.error input tok "invalid operands"

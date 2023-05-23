@@ -56,17 +56,19 @@ Multi statements
   [3]
 
 Simple locals
-  $ ./scripts/runcode.sh "{ a=3; return a; }"
+  $ ./scripts/runcode.sh "{ int a; a=3; return a; }"
   [3]
-  $ ./scripts/runcode.sh "{ a=3; z=5; return a+z; }"
+  $ ./scripts/runcode.sh "{ int a=3; return a; }"
+  [3]
+  $ ./scripts/runcode.sh "{ int a=3; int z=5; return a+z; }"
   [8]
-  $ ./scripts/runcode.sh "{ a=b=3; return a+b; }"
+  $ ./scripts/runcode.sh "{ int a; int b; a=b=3; return a+b; }"
   [6]
 
 Longer local names
-  $ ./scripts/runcode.sh "{ foo=3; return foo; }"
+  $ ./scripts/runcode.sh "{ int foo=3; return foo; }"
   [3]
-  $ ./scripts/runcode.sh "{ foo123=3; bar=5; return foo123+bar; }"
+  $ ./scripts/runcode.sh "{ int foo123=3; int bar=5; return foo123+bar; }"
   [8]
 
 Nested blocks
@@ -92,27 +94,35 @@ If/else
   [3]
 
 For statement
-  $ ./scripts/runcode.sh "{ i=0; j=0; for (i=0; i<=10; i=i+1) j=i+j; return j; }"
+  $ ./scripts/runcode.sh "{ int i=0; int j=0; for (i=0; i<=10; i=i+1) j=i+j; return j; }"
   [55]
   $ ./scripts/runcode.sh "{ for (;;) {return 3;} return 5; }"
   [3]
 
 While statement
-  $ ./scripts/runcode.sh "{ i=0; while (i<10) { i=i+1; } return i; }"
+  $ ./scripts/runcode.sh "{ int i=0; while (i<10) { i=i+1; } return i; }"
   [10]
+  $ ./scripts/runcode.sh "{ int i=0; int j=0; while (i<=10) { j=i+j; i=i+1; } return j; }"
+  [55]
 
 Address/deref expressions
-  $ ./scripts/runcode.sh "{ x=3; return *&x; }"
+  $ ./scripts/runcode.sh "{ int x=3; return *&x; }"
   [3]
-  $ ./scripts/runcode.sh "{ x=3; y=&x; z=&y; return **z; }"
+  $ ./scripts/runcode.sh "{ int x=3; int *y=&x; int **z=&y; return **z; }"
   [3]
-  $ ./scripts/runcode.sh "{ x=3; y=5; return *(&x+1); }"
+  $ ./scripts/runcode.sh "{ int x=3; int y=5; return *(&x+1); }"
   [5]
-  $ ./scripts/runcode.sh "{ x=3; y=5; return *(&y-1); }"
+  $ ./scripts/runcode.sh "{ int x=3; int y=5; return *(&y-1); }"
   [3]
-  $ ./scripts/runcode.sh "{ x=3; y=5; *(&x+1)=7; return y; }"
-  [7]
-  $ ./scripts/runcode.sh "{ x=3; y=5; *(&y-2+1)=7; return x; }"
-  [7]
-  $ ./scripts/runcode.sh "{ x=3; return (&x+2)-&x+3; }"
+  $ ./scripts/runcode.sh "{ int x=3; int *y=&x; *y=5; return x; }"
   [5]
+  $ ./scripts/runcode.sh "{ int x=3; int y=5; *(&x+1)=7; return y; }"
+  [7]
+  $ ./scripts/runcode.sh "{ int x=3; int y=5; *(&y-2+1)=7; return x; }"
+  [7]
+  $ ./scripts/runcode.sh "{ int x=3; return (&x+2)-&x+3; }"
+  [5]
+  $ ./scripts/runcode.sh "{ int x, y; x=3; y=5; return x+y; }"
+  [8]
+  $ ./scripts/runcode.sh "{ int x=3, y=5; return x+y; }"
+  [8]
