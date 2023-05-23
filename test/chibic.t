@@ -72,3 +72,7 @@ Longer local names
 Nested blocks
   $ ./scripts/runcode.sh "{ {1; {2;} return 3;} }"
   [3]
+
+Null statement
+  $ ./scripts/runcode.sh "{ ;;; return 5; }"
+  [5]

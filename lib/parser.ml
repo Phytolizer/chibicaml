@@ -139,12 +139,16 @@ and assign self input rest tok =
 (* expr: assign *)
 and expr self input rest tok = assign self input rest tok
 
-(* expr-stmt: expr ';' *)
+(* expr-stmt: [ expr ] ';' *)
 and expr_stmt self input rest tok =
-  let tok = ref tok in
-  let node = Node.make_unary ExprStmt (expr self input tok !tok) in
-  rest := Token.skip input !tok ";";
-  node
+  if Token.equal (List.hd tok) ";" then (
+    rest := List.tl tok;
+    Node.Block [] |> Node.make)
+  else
+    let tok = ref tok in
+    let node = Node.make_unary ExprStmt (expr self input tok !tok) in
+    rest := Token.skip input !tok ";";
+    node
 
 (* compound-stmt: { stmt } '}' *)
 and compound_stmt self input rest (tok : Token.t list) =
