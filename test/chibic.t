@@ -100,3 +100,17 @@ For statement
 While statement
   $ ./scripts/runcode.sh "{ i=0; while (i<10) { i=i+1; } return i; }"
   [10]
+
+Address/deref expressions
+  $ ./scripts/runcode.sh "{ x=3; return *&x; }"
+  [3]
+  $ ./scripts/runcode.sh "{ x=3; y=&x; z=&y; return **z; }"
+  [3]
+  $ ./scripts/runcode.sh "{ x=3; y=5; return *(&x+8); }"
+  [5]
+  $ ./scripts/runcode.sh "{ x=3; y=5; return *(&y-8); }"
+  [3]
+  $ ./scripts/runcode.sh "{ x=3; y=5; *(&x+8)=7; return y; }"
+  [7]
+  $ ./scripts/runcode.sh "{ x=3; y=5; *(&y-8)=7; return x; }"
+  [7]

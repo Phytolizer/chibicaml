@@ -30,21 +30,26 @@ let assign_lvar_offsets (prog : Node.func ref) =
     !prog.func_locals;
   prog := { !prog with func_stack_size = align_to !offset 16 }
 
-let gen_addr (input : string) (node : Node.t) =
+let rec gen_addr (self : t) (input : string) (node : Node.t) =
   match node.kind with
   | Node.Var var ->
       let offset = !var.offset in
       emitf "lea rax, [rbp - %d]" offset
+  | Node.Deref -> gen_expr self input (Option.get node.lhs)
   | _ -> Token.error input node.tok "not an lvalue"
 
-let rec gen_expr (self : t) (input : string) (node : Node.t) =
+and gen_expr (self : t) (input : string) (node : Node.t) =
   match node.kind with
   | Num value -> Printf.printf "  mov rax, %d\n" value
   | Var _ ->
-      gen_addr input node;
+      gen_addr self input node;
       emit "mov rax, [rax]"
+  | Deref ->
+      gen_expr self input (Option.get node.lhs);
+      emit "mov rax, [rax]"
+  | Addr -> gen_addr self input (Option.get node.lhs)
   | Assign ->
-      gen_addr input (Option.get node.lhs);
+      gen_addr self input (Option.get node.lhs);
       push self;
       gen_expr self input (Option.get node.rhs);
       pop self "rdi";

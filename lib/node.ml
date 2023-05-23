@@ -8,6 +8,8 @@ type kind =
   | Lt
   | Le
   | Assign
+  | Addr
+  | Deref
   | ExprStmt
   (* while loops go here too *)
   | For of for_stmt

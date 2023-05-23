@@ -36,7 +36,7 @@ let rec primary (self : t) input rest (tok : Token.t list) =
           node
       | _ -> Token.error input (List.hd !tok) "expected an expression")
 
-(* unary: ( '+' | '-' ) unary
+(* unary: ( '+' | '-' | '*' | '&' ) unary
         | primary *)
 and unary self input rest (tok : Token.t list) =
   let start_tok = List.hd tok in
@@ -46,6 +46,8 @@ and unary self input rest (tok : Token.t list) =
       Node.make_binary start_tok Sub
         (Node.make_num start_tok 0)
         (unary self input rest (List.tl tok))
+  | "&" -> Node.make_unary start_tok Addr (unary self input rest (List.tl tok))
+  | "*" -> Node.make_unary start_tok Deref (unary self input rest (List.tl tok))
   | _ -> primary self input rest tok
 
 (* mul: unary { '*' unary | '/' unary } *)
