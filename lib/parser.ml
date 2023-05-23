@@ -146,15 +146,29 @@ and expr_stmt self input rest tok =
   rest := Token.skip input !tok ";";
   node
 
-(* stmt: 'return' expr ';' | expr-stmt *)
-and stmt self input rest tok =
-  if Token.equal (List.hd tok) "return" then (
-    let tok = ref tok in
-    let value = expr self input tok (List.tl !tok) in
-    let node = Node.make_unary Return value in
-    rest := Token.skip input !tok ";";
-    node)
-  else expr_stmt self input rest tok
+(* compound-stmt: { stmt } '}' *)
+and compound_stmt self input rest (tok : Token.t list) =
+  let tok = ref tok in
+  let cur = ref ([] : Node.t list) in
+  while not (String.equal (List.hd !tok).text "}") do
+    cur := stmt self input tok !tok :: !cur
+  done;
+  rest := List.tl !tok;
+  List.rev !cur |> fun x -> Node.Block x |> Node.make
+
+(* stmt: 'return' expr ';'
+       | '{' compound-stmt
+       | expr-stmt *)
+and stmt self input rest (tok : Token.t list) =
+  match (List.hd tok).text with
+  | "return" ->
+      let tok = ref tok in
+      let value = expr self input tok (List.tl !tok) in
+      let node = Node.make_unary Return value in
+      rest := Token.skip input !tok ";";
+      node
+  | "{" -> compound_stmt self input rest (List.tl tok)
+  | _ -> expr_stmt self input rest tok
 
 let parse input (tokens : Token.t list) : Node.func =
   let tokens = ref tokens in
@@ -165,4 +179,6 @@ let parse input (tokens : Token.t list) : Node.func =
   done;
   let last_tok = List.hd !tokens in
   if last_tok.kind != Token.Eof then Token.error input last_tok "extra token"
-  else { body = !nodes |> List.rev; locals = self.locals; stack_size = 0 }
+  else
+    let body = !nodes |> List.rev |> fun x -> Node.Block x |> Node.make in
+    { body; locals = self.locals; stack_size = 0 }

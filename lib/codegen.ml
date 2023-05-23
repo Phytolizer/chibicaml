@@ -61,12 +61,13 @@ let rec gen_expr (self : t) (node : Node.t) =
           print_endline "  movzx rax, al"
       | _ -> Error.error "invalid expression")
 
-let gen_stmt self (node : Node.t) =
+let rec gen_stmt self (node : Node.t) =
   match node.kind with
   | Node.ExprStmt -> gen_expr self (Option.get node.lhs)
   | Node.Return ->
       gen_expr self (Option.get node.lhs);
       print_endline "  jmp .L.return"
+  | Node.Block body -> List.iter (gen_stmt self) body
   | _ -> Error.error "invalid statement"
 
 let gen (prog : Node.func) =
@@ -78,11 +79,7 @@ let gen (prog : Node.func) =
   print_endline "  push rbp";
   print_endline "  mov rbp, rsp";
   Printf.printf "  sub rsp, %d\n" !prog.stack_size;
-  List.iter
-    (fun stmt ->
-      gen_stmt self stmt;
-      assert (self.depth == 0))
-    !prog.body;
+  gen_stmt self !prog.body;
   print_endline ".L.return:";
   print_endline "  mov rsp, rbp";
   print_endline "  pop rbp";

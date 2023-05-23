@@ -12,15 +12,10 @@ type kind =
   | Return
   | Var of var ref
   | Num of int
+  | Block of t list
 
 and var = { name : string; offset : int }
-
-and func = {
-  body : t list;
-  locals : (string, var ref) Hashtbl.t;
-  stack_size : int;
-}
-
+and func = { body : t; locals : (string, var ref) Hashtbl.t; stack_size : int }
 and t = { kind : kind; lhs : t option; rhs : t option }
 
 let make kind = { kind; lhs = None; rhs = None }

@@ -52,7 +52,7 @@ let tokenize text =
           let len = !p - q in
           let id = String.sub text q len in
           cur := Token.make (Ident id) id q :: !cur
-      | '+' | '-' | '*' | '/' | '(' | ')' | '>' | '<' | ';' | '=' ->
+      | '+' | '-' | '*' | '/' | '(' | ')' | '{' | '}' | '>' | '<' | ';' | '=' ->
           cur := Token.make Reserved (String.sub text !p 1) !p :: !cur;
           p := !p + 1
       | _ -> Error.error_at text !p "invalid token"
