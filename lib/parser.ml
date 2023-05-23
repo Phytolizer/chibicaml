@@ -302,14 +302,15 @@ and typespec input rest tok : Type.t =
   Type.int
 
 (* type-suffix: '(' func-params
-              | '[' num ']'
+              | '[' num ']' type-suffix
               | epsilon *)
 and type_suffix input rest (tok : Token.t list) (ty : Type.t) =
   match (List.hd tok).text with
   | "(" -> func_params input rest tok ty
   | "[" ->
       let sz = List.tl tok |> List.hd |> get_number input in
-      rest := Token.skip input (List.tl (List.tl tok)) "]";
+      let tok = Token.skip input (List.tl (List.tl tok)) "]" in
+      let ty = type_suffix input rest tok ty in
       Type.array_of ty sz
   | _ ->
       rest := tok;
