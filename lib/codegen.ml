@@ -1,5 +1,8 @@
 type t = { mutable depth : int; mutable counter : int }
 
+let argreg : string Seq.t =
+  List.to_seq [ "rdi"; "rsi"; "rdx"; "rcx"; "r8"; "r9" ]
+
 let emit text =
   print_char '\t';
   print_endline text
@@ -54,10 +57,19 @@ and gen_expr (self : t) (input : string) (node : Node.t) =
       gen_expr self input (Option.get node.rhs);
       pop self "rdi";
       emit "mov [rdi], rax"
-  | FunCall name ->
+  | FunCall node ->
+      let nargs =
+        List.length
+          (List.map
+             (fun arg ->
+               gen_expr self input arg;
+               push self)
+             node.funcall_args)
+      in
+      List.iter (pop self) (Seq.take nargs argreg |> List.of_seq |> List.rev);
       emit "mov rax, 0";
-      emitf "extern %s" name;
-      emitf "call %s" name
+      emitf "extern %s" node.funcall_name;
+      emitf "call %s" node.funcall_name
   | kind -> (
       gen_expr self input (Option.get node.rhs);
       push self;

@@ -10,7 +10,7 @@ type kind =
   | Assign
   | Addr
   | Deref
-  | FunCall of string
+  | FunCall of funcall
   | ExprStmt
   (* while loops go here too *)
   | For of for_stmt
@@ -27,6 +27,8 @@ and func = {
   func_locals : (string, var ref) Hashtbl.t;
   func_stack_size : int;
 }
+
+and funcall = { funcall_name : string; funcall_args : t list }
 
 and for_stmt = {
   for_init : t option;

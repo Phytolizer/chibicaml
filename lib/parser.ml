@@ -16,9 +16,22 @@ let new_lvar (self : t) (var_ty : Type.t) (name : string) : Node.var ref =
 let lazy_value (default : unit -> 'a) (x : 'a option) : 'a =
   match x with Some x -> x | None -> default ()
 
-(* primary: '(' expr ')' | num | ident [ args ] *)
-(* args: '(' ')' *)
-let rec primary (self : t) input rest (tok : Token.t list) =
+(* funcall: ident '(' [ assign { ',' assign } ] ')' *)
+let rec funcall (self : t) input rest (tok : Token.t list) =
+  let start_tok = List.hd tok in
+  let tok = ref (List.tl (List.tl tok)) in
+  let cur = ref ([] : Node.t list) in
+  let first = ref true in
+  while not (Token.equal (List.hd !tok) ")") do
+    if !first then first := false else tok := Token.skip input !tok ",";
+    cur := assign self input tok !tok :: !cur
+  done;
+  rest := Token.skip input !tok ")";
+  Node.make start_tok
+    (FunCall { funcall_name = start_tok.text; funcall_args = List.rev !cur })
+
+(* primary: '(' expr ')' | num | ident [ func-args ] *)
+and primary (self : t) input rest (tok : Token.t list) =
   let start_tok = List.hd tok in
   let tok = ref tok in
   match (List.hd !tok).text with
@@ -33,12 +46,7 @@ let rec primary (self : t) input rest (tok : Token.t list) =
           rest := List.tl !tok;
           node
       | Token.Ident _ ->
-          if Token.equal (List.nth !tok 1) "(" then (
-            (* Function call *)
-            let name_tok = List.hd !tok in
-            let node = Node.make name_tok (FunCall name_tok.text) in
-            rest := Token.skip input (List.tl (List.tl !tok)) ")";
-            node)
+          if Token.equal (List.nth !tok 1) "(" then funcall self input rest !tok
           else
             (* Variable *)
             let var =

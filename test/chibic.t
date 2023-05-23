@@ -2,6 +2,12 @@ Write aux file for upcoming tests
   $ cat <<EOM | gcc -xc -c -o tmp2.o -
   > int ret3() { return 3; }
   > int ret5() { return 5; }
+  > int add(int x, int y) { return x+y; }
+  > int sub(int x, int y) { return x-y; }
+  > 
+  > int add6(int a, int b, int c, int d, int e, int f) {
+  >   return a+b+c+d+e+f;
+  > }
   > EOM
 
   $ ./scripts/runcode.sh "{ return 0; }"
@@ -138,3 +144,15 @@ Function calls
   [3]
   $ ./scripts/runcode.sh "{ return ret5(); }"
   [5]
+
+...with parameters
+  $ ./scripts/runcode.sh "{ return add(3, 5); }"
+  [8]
+  $ ./scripts/runcode.sh "{ return sub(5, 3); }"
+  [2]
+  $ ./scripts/runcode.sh "{ return add6(1,2,3,4,5,6); }"
+  [21]
+  $ ./scripts/runcode.sh "{ return add6(1,2,add6(3,4,5,6,7,8),9,10,11); }"
+  [66]
+  $ ./scripts/runcode.sh "{ return add6(1,2,add6(3,add6(4,5,6,7,8,9),10,11,12,13),14,15,16); }"
+  [136]
