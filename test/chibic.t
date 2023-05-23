@@ -96,3 +96,7 @@ For statement
   [55]
   $ ./scripts/runcode.sh "{ for (;;) {return 3;} return 5; }"
   [3]
+
+While statement
+  $ ./scripts/runcode.sh "{ i=0; while (i<10) { i=i+1; } return i; }"
+  [10]

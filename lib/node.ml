@@ -9,6 +9,7 @@ type kind =
   | Le
   | Assign
   | ExprStmt
+  (* while loops go here too *)
   | For of for_stmt
   | If of if_stmt
   | Return

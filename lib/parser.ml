@@ -204,6 +204,20 @@ and stmt self input rest (tok : Token.t list) =
       tok := Token.skip input !tok ")";
       let for_body = stmt self input rest !tok in
       Node.For { for_init; for_cond; for_inc; for_body } |> Node.make
+  | "while" ->
+      let tok = ref tok in
+      tok := Token.skip input (List.tl !tok) "(";
+      let for_cond = expr self input tok !tok in
+      tok := Token.skip input !tok ")";
+      let for_body = stmt self input rest !tok in
+      Node.For
+        {
+          for_init = Node.Block [] |> Node.make;
+          for_cond = Some for_cond;
+          for_inc = None;
+          for_body;
+        }
+      |> Node.make
   | "{" -> compound_stmt self input rest (List.tl tok)
   | _ -> expr_stmt self input rest tok
 
