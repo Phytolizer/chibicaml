@@ -21,8 +21,8 @@ let assign_lvar_offsets (prog : Node.func ref) =
     (fun _ (var : Node.var ref) ->
       offset := !offset + 8;
       var := { !var with offset = !offset })
-    !prog.locals;
-  prog := { !prog with stack_size = align_to !offset 16 }
+    !prog.func_locals;
+  prog := { !prog with func_stack_size = align_to !offset 16 }
 
 let gen_addr (node : Node.t) =
   match node.kind with
@@ -75,13 +75,28 @@ let rec gen_stmt self (node : Node.t) =
   | Node.Block body -> List.iter (gen_stmt self) body
   | Node.If node ->
       let c = count self in
-      gen_expr self node.cond;
+      gen_expr self node.if_cond;
       print_endline "  cmp rax, 0";
       Printf.printf "  je .L.else.%d\n" c;
-      gen_stmt self node.then_stmt;
+      gen_stmt self node.if_then_stmt;
       Printf.printf "  jmp .L.end.%d\n" c;
       Printf.printf ".L.else.%d:\n" c;
-      Option.map (gen_stmt self) node.else_stmt |> ignore;
+      Option.map (gen_stmt self) node.if_else_stmt |> ignore;
+      Printf.printf ".L.end.%d:\n" c
+  | Node.For node ->
+      let c = count self in
+      gen_stmt self node.for_init;
+      Printf.printf ".L.begin.%d:\n" c;
+      Option.map
+        (fun cond ->
+          gen_expr self cond;
+          print_endline "  cmp rax, 0";
+          Printf.printf "  je .L.end.%d\n" c)
+        node.for_cond
+      |> ignore;
+      gen_stmt self node.for_body;
+      Option.map (gen_expr self) node.for_inc |> ignore;
+      Printf.printf "  jmp .L.begin.%d\n" c;
       Printf.printf ".L.end.%d:\n" c
   | _ -> Error.error "invalid statement"
 
@@ -93,8 +108,8 @@ let gen (prog : Node.func) =
   print_endline "main:";
   print_endline "  push rbp";
   print_endline "  mov rbp, rsp";
-  Printf.printf "  sub rsp, %d\n" !prog.stack_size;
-  gen_stmt self !prog.body;
+  Printf.printf "  sub rsp, %d\n" !prog.func_stack_size;
+  gen_stmt self !prog.func_body;
   print_endline ".L.return:";
   print_endline "  mov rsp, rbp";
   print_endline "  pop rbp";

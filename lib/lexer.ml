@@ -24,7 +24,8 @@ let is_ident1 c =
 let is_ident2 c =
   match c with 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' -> true | _ -> false
 
-let is_keyword (tok : Token.t) = eq_any [ "return"; "if"; "else" ] tok.text
+let is_keyword (tok : Token.t) =
+  eq_any [ "return"; "if"; "else"; "for" ] tok.text
 
 let convert_keywords (toks : Token.t list) : Token.t list =
   List.map

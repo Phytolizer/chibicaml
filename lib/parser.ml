@@ -162,6 +162,7 @@ and compound_stmt self input rest (tok : Token.t list) =
 
 (* stmt: 'return' expr ';'
        | 'if' '(' expr ')' stmt [ 'else' stmt ]
+       | 'for' '(' expr-stmt [ expr ] ';' [ expr ] ')' stmt
        | '{' compound-stmt
        | expr-stmt *)
 and stmt self input rest (tok : Token.t list) =
@@ -175,16 +176,34 @@ and stmt self input rest (tok : Token.t list) =
   | "if" ->
       let tok = ref tok in
       tok := Token.skip input (List.tl !tok) "(";
-      let cond = expr self input tok !tok in
+      let if_cond = expr self input tok !tok in
       tok := Token.skip input !tok ")";
-      let then_stmt = stmt self input tok !tok in
-      let else_stmt =
+      let if_then_stmt = stmt self input tok !tok in
+      let if_else_stmt =
         if Token.equal (List.hd !tok) "else" then
           Some (stmt self input tok (List.tl !tok))
         else None
       in
       rest := !tok;
-      Node.If { cond; then_stmt; else_stmt } |> Node.make
+      Node.If { if_cond; if_then_stmt; if_else_stmt } |> Node.make
+  | "for" ->
+      let tok = ref tok in
+      tok := Token.skip input (List.tl !tok) "(";
+      let for_init = expr_stmt self input tok !tok in
+      let for_cond =
+        if not (Token.equal (List.hd !tok) ";") then
+          Some (expr self input tok !tok)
+        else None
+      in
+      tok := Token.skip input !tok ";";
+      let for_inc =
+        if not (Token.equal (List.hd !tok) ")") then
+          Some (expr self input tok !tok)
+        else None
+      in
+      tok := Token.skip input !tok ")";
+      let for_body = stmt self input rest !tok in
+      Node.For { for_init; for_cond; for_inc; for_body } |> Node.make
   | "{" -> compound_stmt self input rest (List.tl tok)
   | _ -> expr_stmt self input rest tok
 
@@ -198,5 +217,5 @@ let parse input (tokens : Token.t list) : Node.func =
   let last_tok = List.hd !tokens in
   if last_tok.kind != Token.Eof then Token.error input last_tok "extra token"
   else
-    let body = !nodes |> List.rev |> fun x -> Node.Block x |> Node.make in
-    { body; locals = self.locals; stack_size = 0 }
+    let func_body = !nodes |> List.rev |> fun x -> Node.Block x |> Node.make in
+    { func_body; func_locals = self.locals; func_stack_size = 0 }

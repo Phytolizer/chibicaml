@@ -9,6 +9,7 @@ type kind =
   | Le
   | Assign
   | ExprStmt
+  | For of for_stmt
   | If of if_stmt
   | Return
   | Var of var ref
@@ -16,8 +17,21 @@ type kind =
   | Block of t list
 
 and var = { name : string; offset : int }
-and func = { body : t; locals : (string, var ref) Hashtbl.t; stack_size : int }
-and if_stmt = { cond : t; then_stmt : t; else_stmt : t option }
+
+and func = {
+  func_body : t;
+  func_locals : (string, var ref) Hashtbl.t;
+  func_stack_size : int;
+}
+
+and for_stmt = {
+  for_init : t;
+  for_cond : t option;
+  for_inc : t option;
+  for_body : t;
+}
+
+and if_stmt = { if_cond : t; if_then_stmt : t; if_else_stmt : t option }
 and t = { kind : kind; lhs : t option; rhs : t option }
 
 let make kind = { kind; lhs = None; rhs = None }

@@ -90,3 +90,9 @@ If/else
   [4]
   $ ./scripts/runcode.sh "{ if (1) { 1; 2; return 3; } else { return 4; } }"
   [3]
+
+For statement
+  $ ./scripts/runcode.sh "{ i=0; j=0; for (i=0; i<=10; i=i+1) j=i+j; return j; }"
+  [55]
+  $ ./scripts/runcode.sh "{ for (;;) {return 3;} return 5; }"
+  [3]
