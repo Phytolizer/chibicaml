@@ -1,4 +1,4 @@
-type t = { mutable depth : int; mutable counter : int }
+type t = { mutable depth : int; mutable counter : int; current_fn : Node.func }
 
 let argreg : string Seq.t =
   List.to_seq [ "rdi"; "rsi"; "rdx"; "rcx"; "r8"; "r9" ]
@@ -24,14 +24,14 @@ let count (self : t) =
 
 let align_to (n : int) (align : int) : int = (n + align - 1) / align * align
 
-let assign_lvar_offsets (prog : Node.func ref) =
+let assign_lvar_offsets (f : Node.func) =
   let offset = ref 0 in
   Hashtbl.iter
     (fun _ (var : Node.var ref) ->
       offset := !offset + 8;
       var := { !var with offset = !offset })
-    !prog.func_locals;
-  prog := { !prog with func_stack_size = align_to !offset 16 }
+    f.func_locals;
+  { f with func_stack_size = align_to !offset 16 }
 
 let rec gen_addr (self : t) (input : string) (node : Node.t) =
   match node.kind with
@@ -98,7 +98,7 @@ let rec gen_stmt self (input : string) (node : Node.t) =
   | Node.ExprStmt -> gen_expr self input (Option.get node.lhs)
   | Node.Return ->
       gen_expr self input (Option.get node.lhs);
-      emit "jmp .L.return"
+      emitf "jmp .L.return.%s" self.current_fn.func_name
   | Node.Block body -> List.iter (gen_stmt self input) body
   | Node.If node ->
       let c = count self in
@@ -127,17 +127,18 @@ let rec gen_stmt self (input : string) (node : Node.t) =
       Printf.printf ".L.end.%d:\n" c
   | _ -> Token.error input node.tok "invalid statement"
 
-let gen (input : string) (prog : Node.func) =
-  let prog = ref prog in
-  assign_lvar_offsets prog;
-  let self = { depth = 0; counter = 1 } in
-  emit "global main";
-  print_endline "main:";
+let gen_fn (input : string) (f : Node.func) =
+  let f = assign_lvar_offsets f in
+  let self = { depth = 0; counter = 1; current_fn = f } in
+  emitf "global %s" f.func_name;
+  Printf.printf "%s:\n" f.func_name;
   emit "push rbp";
   emit "mov rbp, rsp";
-  emitf "sub rsp, %d" !prog.func_stack_size;
-  gen_stmt self input !prog.func_body;
-  print_endline ".L.return:";
+  emitf "sub rsp, %d" f.func_stack_size;
+  gen_stmt self input f.func_body;
+  Printf.printf ".L.return.%s:\n" f.func_name;
   emit "mov rsp, rbp";
   emit "pop rbp";
   emit "ret"
+
+let gen (input : string) (prog : Node.prog) = List.iter (gen_fn input) prog

@@ -1,1 +1,1 @@
-val gen : string -> Node.func -> unit
+val gen : string -> Node.prog -> unit

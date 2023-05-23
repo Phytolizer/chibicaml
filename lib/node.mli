@@ -23,6 +23,7 @@ type kind =
 and var = { name : string; var_ty : Type.t; offset : int }
 
 and func = {
+  func_name : string;
   func_body : t;
   func_locals : (string, var ref) Hashtbl.t;
   func_stack_size : int;
@@ -46,6 +47,8 @@ and t = {
   lhs : t option;
   rhs : t option;
 }
+
+and prog = func list
 
 val make : Token.t -> kind -> t
 val make_unary : Token.t -> kind -> t -> t
