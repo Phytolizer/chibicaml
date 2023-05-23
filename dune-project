@@ -5,11 +5,11 @@
 (generate_opam_files true)
 
 (source
- (github username/reponame))
+ (github Phytolizer/chibicaml))
 
-(authors "Author Name")
+(authors "Kyle Coffey")
 
-(maintainers "Maintainer Name")
+(maintainers "Kyle Coffey")
 
 (license LICENSE)
 
@@ -19,7 +19,7 @@
  (name chibic)
  (synopsis "A short synopsis")
  (description "A longer description")
- (depends ocaml dune angstrom ppx_deriving.show)
+ (depends ocaml dune angstrom ppx_deriving)
  (tags
   (topics "to describe" your project)))
 
