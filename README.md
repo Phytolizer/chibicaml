@@ -11,7 +11,4 @@ Usually when developing all I need is the tests:
 dune runtest -w
 ```
 
-Sometimes it goes wrong and debugging is easiest with `dune exec`:
-```console
-dune exec bin/chibic.exe 'some bad input'
-```
+Sometimes it goes wrong; I made it print the assembly output in that case.
