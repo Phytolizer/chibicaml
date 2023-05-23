@@ -1,8 +1,7 @@
 open Chibic
 
 let compile (text : string) =
-  let node = Lexer.tokenize text |> Parser.parse text in
-  Codegen.gen node
+  Lexer.tokenize text |> Parser.parse text |> Codegen.gen text
 
 let () =
   let argc = Array.length Sys.argv in

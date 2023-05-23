@@ -33,10 +33,10 @@ and for_stmt = {
 }
 
 and if_stmt = { if_cond : t; if_then_stmt : t; if_else_stmt : t option }
-and t = { kind : kind; lhs : t option; rhs : t option }
+and t = { kind : kind; tok : Token.t; lhs : t option; rhs : t option }
 
-let make kind = { kind; lhs = None; rhs = None }
-let make_unary kind expr = { kind; lhs = Some expr; rhs = None }
-let make_binary kind lhs rhs = { kind; lhs = Some lhs; rhs = Some rhs }
-let make_num value = Num value |> make
-let make_var var = Var var |> make
+let make tok kind = { kind; tok; lhs = None; rhs = None }
+let make_unary tok kind expr = { kind; tok; lhs = Some expr; rhs = None }
+let make_binary tok kind lhs rhs = { kind; tok; lhs = Some lhs; rhs = Some rhs }
+let make_num tok value = Num value |> make tok
+let make_var tok var = Var var |> make tok

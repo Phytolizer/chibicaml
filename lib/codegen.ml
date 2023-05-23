@@ -30,29 +30,29 @@ let assign_lvar_offsets (prog : Node.func ref) =
     !prog.func_locals;
   prog := { !prog with func_stack_size = align_to !offset 16 }
 
-let gen_addr (node : Node.t) =
+let gen_addr (input : string) (node : Node.t) =
   match node.kind with
   | Node.Var var ->
       let offset = !var.offset in
       emitf "lea rax, [rbp - %d]" offset
-  | _ -> Error.error "not an lvalue"
+  | _ -> Token.error input node.tok "not an lvalue"
 
-let rec gen_expr (self : t) (node : Node.t) =
+let rec gen_expr (self : t) (input : string) (node : Node.t) =
   match node.kind with
   | Num value -> Printf.printf "  mov rax, %d\n" value
   | Var _ ->
-      gen_addr node;
+      gen_addr input node;
       emit "mov rax, [rax]"
   | Assign ->
-      gen_addr (Option.get node.lhs);
+      gen_addr input (Option.get node.lhs);
       push self;
-      gen_expr self (Option.get node.rhs);
+      gen_expr self input (Option.get node.rhs);
       pop self "rdi";
       emit "mov [rdi], rax"
   | kind -> (
-      gen_expr self (Option.get node.rhs);
+      gen_expr self input (Option.get node.rhs);
       push self;
-      gen_expr self (Option.get node.lhs);
+      gen_expr self input (Option.get node.lhs);
       pop self "rdi";
       match kind with
       | Add -> emit "add rax, rdi"
@@ -68,45 +68,45 @@ let rec gen_expr (self : t) (node : Node.t) =
           | Ne -> emit "setne al"
           | Lt -> emit "setl al"
           | Le -> emit "setle al"
-          | _ -> Error.error "invalid expression");
+          | _ -> Token.error input node.tok "invalid expression");
           emit "movzx rax, al"
-      | _ -> Error.error "invalid expression")
+      | _ -> Token.error input node.tok "invalid expression")
 
-let rec gen_stmt self (node : Node.t) =
+let rec gen_stmt self (input : string) (node : Node.t) =
   match node.kind with
-  | Node.ExprStmt -> gen_expr self (Option.get node.lhs)
+  | Node.ExprStmt -> gen_expr self input (Option.get node.lhs)
   | Node.Return ->
-      gen_expr self (Option.get node.lhs);
+      gen_expr self input (Option.get node.lhs);
       emit "jmp .L.return"
-  | Node.Block body -> List.iter (gen_stmt self) body
+  | Node.Block body -> List.iter (gen_stmt self input) body
   | Node.If node ->
       let c = count self in
-      gen_expr self node.if_cond;
+      gen_expr self input node.if_cond;
       emit "cmp rax, 0";
       emitf "je .L.else.%d" c;
-      gen_stmt self node.if_then_stmt;
+      gen_stmt self input node.if_then_stmt;
       emitf "jmp .L.end.%d" c;
       Printf.printf ".L.else.%d:\n" c;
-      Option.map (gen_stmt self) node.if_else_stmt |> ignore;
+      Option.map (gen_stmt self input) node.if_else_stmt |> ignore;
       Printf.printf ".L.end.%d:\n" c
   | Node.For node ->
       let c = count self in
-      Option.map (gen_stmt self) node.for_init |> ignore;
+      Option.map (gen_stmt self input) node.for_init |> ignore;
       Printf.printf ".L.begin.%d:\n" c;
       Option.map
         (fun cond ->
-          gen_expr self cond;
+          gen_expr self input cond;
           emit "cmp rax, 0";
           emitf "je .L.end.%d" c)
         node.for_cond
       |> ignore;
-      gen_stmt self node.for_body;
-      Option.map (gen_expr self) node.for_inc |> ignore;
+      gen_stmt self input node.for_body;
+      Option.map (gen_expr self input) node.for_inc |> ignore;
       emitf "jmp .L.begin.%d" c;
       Printf.printf ".L.end.%d:\n" c
-  | _ -> Error.error "invalid statement"
+  | _ -> Token.error input node.tok "invalid statement"
 
-let gen (prog : Node.func) =
+let gen (input : string) (prog : Node.func) =
   let prog = ref prog in
   assign_lvar_offsets prog;
   let self = { depth = 0; counter = 1 } in
@@ -115,7 +115,7 @@ let gen (prog : Node.func) =
   emit "push rbp";
   emit "mov rbp, rsp";
   emitf "sub rsp, %d" !prog.func_stack_size;
-  gen_stmt self !prog.func_body;
+  gen_stmt self input !prog.func_body;
   print_endline ".L.return:";
   emit "mov rsp, rbp";
   emit "pop rbp";
