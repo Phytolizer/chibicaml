@@ -4,14 +4,14 @@ let emit text =
   print_char '\t';
   print_endline text
 
-let emitf text = Printf.ksprintf (fun s -> Printf.printf "  %s\n" s) text
+let emitf text = Printf.ksprintf (fun s -> Printf.printf "\t%s\n" s) text
 
 let push (self : t) =
-  print_endline "  push rax";
+  emit "push rax";
   self.depth <- self.depth + 1
 
 let pop (self : t) arg =
-  Printf.printf "  pop %s\n" arg;
+  emitf "pop %s" arg;
   self.depth <- self.depth - 1
 
 let count (self : t) =
@@ -40,7 +40,7 @@ let rec gen_addr (self : t) (input : string) (node : Node.t) =
 
 and gen_expr (self : t) (input : string) (node : Node.t) =
   match node.kind with
-  | Num value -> Printf.printf "  mov rax, %d\n" value
+  | Num value -> emitf "mov rax, %d" value
   | Var _ ->
       gen_addr self input node;
       emit "mov rax, [rax]"
