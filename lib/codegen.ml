@@ -81,7 +81,7 @@ let rec gen_stmt self (node : Node.t) =
       gen_stmt self node.then_stmt;
       Printf.printf "  jmp .L.end.%d\n" c;
       Printf.printf ".L.else.%d:\n" c;
-      let _ = Option.map (gen_stmt self) node.else_stmt in
+      Option.map (gen_stmt self) node.else_stmt |> ignore;
       Printf.printf ".L.end.%d:\n" c
   | _ -> Error.error "invalid statement"
 
