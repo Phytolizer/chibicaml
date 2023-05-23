@@ -69,8 +69,24 @@ and primary (locals : locals) input rest (tok : Token.t list) =
             node
       | _ -> Token.error input (List.hd !tok) "expected an expression")
 
-(* unary: ( '+' | '-' | '*' | '&' ) unary
-        | primary *)
+(* postfix: primary { '[' expr ']' } *)
+and postfix locals input rest (tok : Token.t list) =
+  let tok = ref tok in
+  let node = ref (primary locals input tok !tok) in
+  while Token.equal (List.hd !tok) "[" do
+    let start = List.hd !tok in
+    let idx = expr locals input tok (List.tl !tok) in
+    tok := Token.skip input !tok "]";
+    node := Node.make_unary start Deref (Node.make_add input start !node idx)
+  done;
+  rest := !tok;
+  !node
+
+(*
+  unary: ( '+' | '-' | '*' | '&' ) unary
+       | primary
+       | postfix
+*)
 and unary locals input rest (tok : Token.t list) =
   let start_tok = List.hd tok in
   match start_tok.text with
@@ -83,7 +99,7 @@ and unary locals input rest (tok : Token.t list) =
       Node.make_unary start_tok Addr (unary locals input rest (List.tl tok))
   | "*" ->
       unary locals input rest (List.tl tok) |> Node.make_unary start_tok Deref
-  | _ -> primary locals input rest tok
+  | _ -> postfix locals input rest tok
 
 (* mul: unary { '*' unary | '/' unary } *)
 and mul locals input rest tok =

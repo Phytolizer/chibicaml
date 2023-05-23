@@ -145,6 +145,7 @@ let make_add input tok lhs rhs =
   else
     (* swap if lhs is the int and rhs is the ptr *)
     let lhs, rhs = if Type.is_int lhs_ty then (rhs, lhs) else (lhs, rhs) in
+    let lhs_ty = Option.get lhs.ty in
     let rhs =
       make_binary tok Mul rhs
         (make_num tok (Type.baseof lhs_ty |> Option.get |> fun x -> x.sizeof))
